@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nabídkový generátor{% endblock %} | TWIN Production</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="logo">TWIN <span>Production</span> | Nabídky</a>
+        <nav>
+            <a href="/">Nová nabídka</a>
+            <a href="/history">Historie</a>
+            <a href="/admin/">Admin</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

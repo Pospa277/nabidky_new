@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{% if product %}Upravit: {{ product.name }}{% else %}Nový produkt{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>{% if product %}Upravit produkt{% else %}Nový produkt{% endif %}</h2>
+
+    <form method="post"
+          action="{% if product %}/admin/products/{{ product.id }}/edit{% else %}/admin/products/new{% endif %}"
+          enctype="multipart/form-data">
+
+        <div class="form-group">
+            <label for="name">Název produktu: *</label>
+            <input type="text" name="name" id="name" required
+                   value="{{ product.name if product else '' }}"
+                   placeholder="Např. Náplasti Pocket Box">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Popis:</label>
+            <textarea name="description" id="description" rows="3"
+                      placeholder="Popis produktu...">{{ product.description if product else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Kategorie:</label>
+            <input type="text" name="category" id="category"
+                   value="{{ product.category if product else '' }}"
+                   placeholder="Např. Osobní péče, Hygiena...">
+        </div>
+
+        <div class="form-group">
+            <label for="image_url">URL obrázku:</label>
+            <input type="url" name="image_url" id="image_url"
+                   value="{{ product.image_url if product else '' }}"
+                   placeholder="https://...">
+        </div>
+
+        <div class="form-group">
+            <label for="image_file">Nebo nahrát obrázek:</label>
+            <input type="file" name="image_file" id="image_file" accept="image/*">
+            {% if product and product.image_local %}
+            <small>Aktuální: {{ product.image_local }}</small>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="shipping_cost">Náklady na dopravu (Kč):</label>
+            <input type="number" name="shipping_cost" id="shipping_cost" step="0.01" min="0"
+                   value="{{ product.shipping_cost if product else 0 }}">
+        </div>
+
+        <div class="flex gap-1">
+            <button type="submit" class="btn btn-primary">
+                {% if product %}Uložit změny{% else %}Vytvořit produkt{% endif %}
+            </button>
+            <a href="/admin/" class="btn btn-secondary">Zpět na přehled</a>
+        </div>
+    </form>
+</div>
+
+{% if product %}
+<!-- Cenové stupně -->
+<div class="card">
+    <h2>Cenové stupně</h2>
+    <p class="mb-1">Definujte ceny podle množství. Čím vyšší množství, tím nižší cena za kus.</p>
+
+    {% if price_tiers %}
+    <table>
+        <thead>
+            <tr>
+                <th>Od (ks)</th>
+                <th>Do (ks)</th>
+                <th>Cena/ks (Kč bez DPH)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tier in price_tiers %}
+            <tr>
+                <td>{{ tier.min_quantity }}</td>
+                <td>{{ tier.max_quantity or "∞" }}</td>
+                <td>{{ "%.2f" | format(tier.price_per_unit) }} Kč</td>
+                <td>
+                    <form method="post" action="/admin/products/{{ product.id }}/tiers/{{ tier.id }}/delete"
+                          style="display:inline"
+                          onsubmit="return confirm('Smazat tento cenový stupeň?')">
+                        <button type="submit" class="btn btn-danger btn-sm">Smazat</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-info">Zatím nejsou definovány žádné cenové stupně.</div>
+    {% endif %}
+
+    <h3 class="mt-2">Přidat cenový stupeň:</h3>
+    <form method="post" action="/admin/products/{{ product.id }}/tiers">
+        <div class="tier-form">
+            <div>
+                <label>Od (ks):</label>
+                <input type="number" name="min_quantity" required min="1" placeholder="100">
+            </div>
+            <div>
+                <label>Do (ks):</label>
+                <input type="number" name="max_quantity" placeholder="299 (prázdné = neomezeno)">
+            </div>
+            <div>
+                <label>Cena/ks (Kč):</label>
+                <input type="number" name="price_per_unit" required step="0.01" min="0" placeholder="36.00">
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary btn-sm">Přidat</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if product.get_image() %}
+<div class="card">
+    <h2>Náhled obrázku</h2>
+    <img src="{{ product.get_image() }}" alt="{{ product.name }}"
+         style="max-width:300px;border-radius:8px;">
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

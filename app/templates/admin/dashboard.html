@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Produkty{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="flex-between">
+        <h2>Správa produktů</h2>
+        <a href="/admin/products/new" class="btn btn-primary">+ Nový produkt</a>
+    </div>
+
+    {% if products %}
+    <div class="product-grid">
+        {% for product in products %}
+        <div class="product-card">
+            {% if product.get_image() %}
+            <img src="{{ product.get_image() }}" alt="{{ product.name }}">
+            {% else %}
+            <div style="width:100%;height:150px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--gray);">
+                Bez obrázku
+            </div>
+            {% endif %}
+            <h3>{{ product.name }}</h3>
+            <div class="category">{{ product.category or "Bez kategorie" }}</div>
+            {% if product.price_tiers %}
+            <div class="price">
+                od {{ "%.2f" | format(product.price_tiers[-1].price_per_unit) }} Kč/ks
+            </div>
+            {% else %}
+            <div class="price" style="color:var(--danger);">Bez ceníku!</div>
+            {% endif %}
+            <div class="actions">
+                <a href="/admin/products/{{ product.id }}/edit" class="btn btn-secondary btn-sm">Upravit</a>
+                <form method="post" action="/admin/products/{{ product.id }}/delete" style="display:inline"
+                      onsubmit="return confirm('Opravdu smazat {{ product.name }}?')">
+                    <button type="submit" class="btn btn-danger btn-sm">Smazat</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center mt-2" style="color: var(--gray);">
+        Zatím žádné produkty. <a href="/admin/products/new">Přidejte první!</a>
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

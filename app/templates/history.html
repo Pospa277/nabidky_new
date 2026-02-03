@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Historie nabídek{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="flex-between">
+        <h2>Historie nabídek</h2>
+        <a href="/" class="btn btn-primary btn-sm">Nová nabídka</a>
+    </div>
+
+    {% if quotes %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Klient</th>
+                <th>Položky</th>
+                <th>Datum</th>
+                <th>Akce</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in quotes %}
+            <tr>
+                <td>{{ q.id }}</td>
+                <td>{{ q.client_name or "—" }}</td>
+                <td>{{ q.items | length }} položek</td>
+                <td>{{ q.created_at.strftime('%d. %m. %Y %H:%M') }}</td>
+                <td>
+                    {% if q.pdf_path %}
+                    <a href="/download-pdf/{{ q.id }}" class="btn btn-primary btn-sm">PDF</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-center mt-2" style="color: var(--gray);">Zatím žádné nabídky. <a href="/">Vytvořte první!</a></p>
+    {% endif %}
+</div>
+{% endblock %}

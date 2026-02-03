@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Nová nabídka{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Nová nabídka</h2>
+    <p class="mb-2">Vložte email od klienta a systém automaticky rozpozná produkt, množství a připraví nabídku.</p>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/parse-email">
+        <div class="form-group">
+            <label for="email_text">Email od klienta:</label>
+            <textarea name="email_text" id="email_text" rows="10"
+                placeholder="Vložte sem celý text emailu od klienta...&#10;&#10;Příklad:&#10;Dobrý den Filipe,&#10;Prosím o cenu na náplasti 300,500 ks, tisk logo 1b&#10;https://www.twinproduction.net/naplasti-pocket-box/produkt/23/17/&#10;&#10;Děkuji a přeji krásný den&#10;Maruška"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Analyzovat email</button>
+    </form>
+</div>
+{% endblock %}

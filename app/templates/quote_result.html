@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Nabídka #{{ quote.id }}{% endblock %}
+
+{% block content %}
+<div class="alert alert-success">
+    Nabídka #{{ quote.id }} byla úspěšně vygenerována!
+</div>
+
+<!-- Kalkulace -->
+<div class="card">
+    <h2>Cenová kalkulace</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produkt</th>
+                <th class="text-right">Množství</th>
+                <th class="text-right">Cena/ks</th>
+                <th class="text-right">Celkem bez DPH</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in calc_items %}
+            <tr>
+                <td>{{ item.product_name }}</td>
+                <td class="text-right">{{ item.quantity }} ks</td>
+                <td class="text-right">{{ "%.2f" | format(item.unit_price) }} Kč</td>
+                <td class="text-right">{{ "%.2f" | format(item.total_price) }} Kč</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total-box">
+        <div class="total-row">
+            <span>Mezisoučet:</span>
+            <span>{{ "%.2f" | format(calc_subtotal) }} Kč</span>
+        </div>
+        {% if calc_shipping > 0 %}
+        <div class="total-row">
+            <span>Doprava:</span>
+            <span>{{ "%.2f" | format(calc_shipping) }} Kč</span>
+        </div>
+        {% endif %}
+        <div class="total-row">
+            <span>Celkem bez DPH:</span>
+            <span>{{ "%.2f" | format(calc_total_without_vat) }} Kč</span>
+        </div>
+        <div class="total-row">
+            <span>DPH 21 %:</span>
+            <span>{{ "%.2f" | format(calc_vat_amount) }} Kč</span>
+        </div>
+        <div class="total-row final">
+            <span>Celkem s DPH:</span>
+            <span>{{ "%.2f" | format(calc_total_with_vat) }} Kč</span>
+        </div>
+    </div>
+</div>
+
+<!-- PDF -->
+<div class="card">
+    <h2>Produktový list (PDF)</h2>
+    <p class="mb-1">PDF nabídka s produktovým listem a kalkulací je připravena ke stažení.</p>
+    <a href="/download-pdf/{{ quote.id }}" class="btn btn-primary">Stáhnout PDF nabídku</a>
+</div>
+
+<!-- Email odpověď -->
+<div class="card">
+    <div class="flex-between mb-1">
+        <h2 style="border:none;padding:0;margin:0">Odpověď na email</h2>
+        <button class="btn btn-success btn-sm copy-btn" onclick="copyEmail()">Kopírovat do schránky</button>
+    </div>
+    <div class="email-preview" id="emailReply">{{ email_reply }}</div>
+</div>
+
+<!-- Akce -->
+<div class="card">
+    <div class="flex gap-2">
+        <a href="/" class="btn btn-primary">Nová nabídka</a>
+        <a href="/history" class="btn btn-secondary">Historie nabídek</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyEmail() {
+    const text = document.getElementById('emailReply').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Zkopírováno!';
+        setTimeout(() => { btn.textContent = 'Kopírovat do schránky'; }, 2000);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Sestavení nabídky{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Analyzovaný email</h2>
+
+    <div class="parsed-info">
+        {% if parsed.client_name %}
+        <p><strong>Klient:</strong> {{ parsed.client_name }}</p>
+        {% endif %}
+        {% if parsed.quantities %}
+        <p><strong>Požadovaná množství:</strong> {{ parsed.quantities | join(', ') }} ks</p>
+        {% endif %}
+        {% if parsed.print_info %}
+        <p><strong>Potisk:</strong> {{ parsed.print_info }}</p>
+        {% endif %}
+        {% if parsed.urls %}
+        <p><strong>Odkazy:</strong>
+            {% for url in parsed.urls %}
+            <a href="{{ url }}" target="_blank">{{ url }}</a>
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% if matched_products %}
+        <p><strong>Nalezené produkty:</strong>
+            {% for p in matched_products %}{{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Sestavení nabídky</h2>
+
+    <form method="post" action="/generate-quote" id="quoteForm">
+        <input type="hidden" name="email_text" value="{{ email_text }}">
+
+        <div class="form-group">
+            <label for="client_name">Jméno klienta:</label>
+            <input type="text" name="client_name" id="client_name"
+                   value="{{ parsed.client_name }}" placeholder="Jméno klienta">
+        </div>
+
+        <h3 class="mb-1">Položky nabídky:</h3>
+        <div id="items-container">
+            {% if matched_products and quantities %}
+                {% for qty in quantities %}
+                    {% set outer_loop = loop %}
+                    {% for product in matched_products %}
+                    <div class="quote-item" data-index="{{ (outer_loop.index0 * matched_products|length) + loop.index0 }}">
+                        <div class="form-group">
+                            <label>Produkt:</label>
+                            <select name="product_id_{{ (outer_loop.index0 * matched_products|length) + loop.index0 }}">
+                                <option value="">-- Vyberte --</option>
+                                {% for p in all_products %}
+                                <option value="{{ p.id }}" {% if p.id == product.id %}selected{% endif %}>
+                                    {{ p.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Množství (ks):</label>
+                            <input type="number" name="quantity_{{ (outer_loop.index0 * matched_products|length) + loop.index0 }}"
+                                   value="{{ qty }}" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" class="remove-item btn btn-danger btn-sm"
+                                    onclick="this.closest('.quote-item').remove()">Odebrat</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div class="quote-item" data-index="0">
+                    <div class="form-group">
+                        <label>Produkt:</label>
+                        <select name="product_id_0">
+                            <option value="">-- Vyberte --</option>
+                            {% for p in all_products %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Množství (ks):</label>
+                        <input type="number" name="quantity_0"
+                               value="{{ quantities[0] if quantities else '' }}" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" class="remove-item btn btn-danger btn-sm"
+                                onclick="this.closest('.quote-item').remove()">Odebrat</button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <button type="button" class="btn btn-secondary mt-1" onclick="addItem()">+ Přidat položku</button>
+
+        <div class="mt-2">
+            <button type="submit" class="btn btn-primary">Kalkulovat a vygenerovat nabídku</button>
+            <a href="/" class="btn btn-secondary">Zpět</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let itemIndex = document.querySelectorAll('.quote-item').length;
+
+const allProducts = [
+    {% for p in all_products %}
+    { id: {{ p.id }}, name: "{{ p.name }}" },
+    {% endfor %}
+];
+
+function addItem() {
+    const container = document.getElementById('items-container');
+    let options = '<option value="">-- Vyberte --</option>';
+    allProducts.forEach(p => {
+        options += `<option value="${p.id}">${p.name}</option>`;
+    });
+
+    const html = `
+    <div class="quote-item" data-index="${itemIndex}">
+        <div class="form-group">
+            <label>Produkt:</label>
+            <select name="product_id_${itemIndex}">${options}</select>
+        </div>
+        <div class="form-group">
+            <label>Množství (ks):</label>
+            <input type="number" name="quantity_${itemIndex}" value="" min="1">
+        </div>
+        <div class="form-group">
+            <label>&nbsp;</label>
+            <button type="button" class="remove-item btn btn-danger btn-sm"
+                    onclick="this.closest('.quote-item').remove()">Odebrat</button>
+        </div>
+    </div>`;
+
+    container.insertAdjacentHTML('beforeend', html);
+    itemIndex++;
+}
+</script>
+{% endblock %}
