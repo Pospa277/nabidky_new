@@ -8,9 +8,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --primary: #E8611A;
-            --primary-dark: #C5500F;
-            --primary-light: #FFF3EC;
+            --primary: #E8961A;
+            --primary-dark: #C57D0F;
+            --primary-light: #FFF6EC;
             --dark: #2D2D2D;
             --gray: #6B7280;
             --gray-light: #F3F4F6;
@@ -30,7 +30,7 @@
         }
 
         .navbar {
-            background: var(--primary);
+            background: linear-gradient(135deg, #2D2D2D 0%, #3a3a3a 100%);
             color: var(--white);
             padding: 0.75rem 2rem;
             display: flex;
@@ -238,7 +238,7 @@
 <body>
 
 <div class="navbar">
-    <a class="logo" onclick="showPage('home')">TWIN <span>Production</span> | Nabídky</a>
+    <a class="logo" onclick="showPage('home')"><strong style="color:#E8961A">TWIN</strong> <span>production s.r.o.</span> | Nabídky</a>
     <nav>
         <a onclick="showPage('home')" id="nav-home" class="active">Nová nabídka</a>
         <a onclick="showPage('history')" id="nav-history">Historie</a>
@@ -768,102 +768,182 @@ function resetHome() {
 
 // ======================== PDF GENERATION ========================
 
+function drawLogo(doc, x, y) {
+    // Orange circle (large)
+    doc.setFillColor(232, 150, 26);
+    doc.circle(x + 28, y + 3, 5, 'F');
+    // Small white/dark circle overlapping
+    doc.setFillColor(45, 45, 45);
+    doc.circle(x + 30.5, y + 5.5, 2.8, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.circle(x + 29.8, y + 4.8, 1.5, 'F');
+
+    // "TWIN" in bold black
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(26);
+    doc.setTextColor(45, 45, 45);
+    doc.text('TWIN', x, y + 17);
+
+    // "production s.r.o." in orange
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(232, 150, 26);
+    doc.text('production s.r.o.', x + 25, y + 17);
+
+    // "personal care products" in gray
+    doc.setFontSize(8.5);
+    doc.setTextColor(140, 140, 140);
+    doc.text('personal care products', x, y + 23);
+}
+
+function fmtPrice(num) {
+    return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Kč';
+}
+
+function addPageFooter(doc) {
+    const pageH = doc.internal.pageSize.getHeight();
+    const pageW = doc.internal.pageSize.getWidth();
+    // Thin orange line
+    doc.setDrawColor(232, 150, 26);
+    doc.setLineWidth(0.4);
+    doc.line(15, pageH - 15, pageW - 15, pageH - 15);
+    // Footer text
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(160, 160, 160);
+    doc.text('TWIN Production s.r.o.  |  Dobrovského 31, 772 00 Olomouc  |  +420 603 491 003  |  info@twinproduction.net  |  www.twinproduction.net', pageW / 2, pageH - 10, { align: 'center' });
+}
+
 function downloadPDF() {
     if (!currentQuote) return;
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const q = currentQuote;
+    const pageW = doc.internal.pageSize.getWidth();
+    const ml = 18; // margin left
+    const mr = pageW - 18; // margin right
 
-    // Colors
-    const orange = [232, 97, 26];
+    // Brand colors
+    const orange = [232, 150, 26];
     const dark = [45, 45, 45];
-    const gray = [107, 112, 128];
+    const gray = [120, 120, 120];
+    const lightGray = [160, 160, 160];
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(...orange);
-    doc.text('TWIN', 15, 20);
-    doc.setTextColor(...gray);
-    doc.setFontSize(22);
-    doc.text('Production', 46, 20);
+    // ---- HEADER ----
+    drawLogo(doc, ml, 10);
 
-    doc.setFontSize(9);
-    doc.setTextColor(...gray);
-    doc.text('reklamní předměty a potisk', 15, 27);
-
-    // Quote info (right side)
-    doc.setFontSize(14);
+    // Right side: document info box
+    doc.setFillColor(250, 245, 238);
+    doc.roundedRect(125, 10, mr - 125, 26, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
     doc.setTextColor(...dark);
-    doc.text(`Nabídka #${q.id}`, 195, 15, { align: 'right' });
+    doc.text('CENOVÁ NABÍDKA', mr - 3, 22, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...gray);
-    doc.text(`Datum: ${q.date}`, 195, 22, { align: 'right' });
+    doc.text(`Č. ${String(q.id).padStart(4, '0')}  |  ${q.date}`, mr - 3, 31, { align: 'right' });
 
-    // Orange line
-    doc.setDrawColor(...orange);
-    doc.setLineWidth(0.8);
-    doc.line(15, 32, 195, 32);
+    // Header divider — thick orange bar
+    doc.setFillColor(...orange);
+    doc.rect(ml, 40, mr - ml, 1.5, 'F');
 
-    // Client
-    let y = 42;
+    // ---- CLIENT INFO ----
+    let y = 50;
     if (q.clientName) {
-        doc.setFillColor(255, 248, 243);
-        doc.rect(15, y - 6, 180, 12, 'F');
-        doc.setDrawColor(...orange);
-        doc.setLineWidth(1);
-        doc.line(15, y - 6, 15, y + 6);
-        doc.setFontSize(10);
-        doc.setTextColor(...orange);
-        doc.text('Klient: ', 20, y + 1);
-        doc.setTextColor(...dark);
-        doc.text(q.clientName, 40, y + 1);
-        y += 20;
-    }
-
-    // Products section
-    doc.setFontSize(13);
-    doc.setTextColor(...orange);
-    doc.text('Produkty a kalkulace', 15, y);
-    y += 3;
-    doc.setDrawColor(253, 231, 216);
-    doc.setLineWidth(0.3);
-    doc.line(15, y, 195, y);
-    y += 10;
-
-    for (const item of q.items) {
-        if (y > 250) { doc.addPage(); y = 20; }
-
-        doc.setFontSize(12);
-        doc.setTextColor(...dark);
-        doc.text(item.productName, 15, y);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...lightGray);
+        doc.text('PŘIPRAVENO PRO', ml, y);
         y += 6;
-
-        if (item.description) {
-            doc.setFontSize(9);
-            doc.setTextColor(...gray);
-            const descLines = doc.splitTextToSize(item.description, 170);
-            doc.text(descLines, 15, y);
-            y += descLines.length * 4 + 2;
-        }
-
-        doc.setFontSize(10);
-        doc.setTextColor(...orange);
-        doc.text(`${item.quantity} ks`, 15, y);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
         doc.setTextColor(...dark);
-        doc.text(`× ${item.unitPrice.toFixed(2)} Kč/ks = `, 40, y);
-        doc.setFont(undefined, 'bold');
-        doc.text(`${item.totalPrice.toFixed(2)} Kč bez DPH`, 85, y);
-        doc.setFont(undefined, 'normal');
+        doc.text(q.clientName, ml, y);
         y += 12;
     }
 
-    // Price table
-    if (y > 220) { doc.addPage(); y = 20; }
-
-    doc.setFontSize(13);
+    // ---- PRODUCT DETAILS ----
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
     doc.setTextColor(...orange);
-    doc.text('Cenový souhrn', 15, y);
-    y += 5;
+    doc.text('POLOŽKY NABÍDKY', ml, y);
+    y += 2;
+    doc.setDrawColor(...orange);
+    doc.setLineWidth(0.5);
+    doc.line(ml, y, ml + 38, y);
+    y += 8;
+
+    for (let idx = 0; idx < q.items.length; idx++) {
+        const item = q.items[idx];
+        if (y > 240) {
+            addPageFooter(doc);
+            doc.addPage();
+            y = 20;
+        }
+
+        // Product card background
+        const cardH = item.description ? 32 : 22;
+        doc.setFillColor(252, 251, 249);
+        doc.roundedRect(ml, y - 4, mr - ml, cardH, 2, 2, 'F');
+
+        // Left accent bar
+        doc.setFillColor(...orange);
+        doc.rect(ml, y - 4, 1.2, cardH, 'F');
+
+        // Product name
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(...dark);
+        doc.text(item.productName, ml + 6, y + 2);
+
+        // Price summary on the right
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(...orange);
+        doc.text(fmtPrice(item.totalPrice), mr - 4, y + 2, { align: 'right' });
+
+        y += 8;
+
+        // Description
+        if (item.description) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...gray);
+            const descLines = doc.splitTextToSize(item.description, mr - ml - 14);
+            doc.text(descLines, ml + 6, y);
+            y += descLines.length * 3.5 + 2;
+        }
+
+        // Quantity × price detail
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...lightGray);
+        doc.text(`${item.quantity} ks  ×  ${item.unitPrice.toFixed(2)} Kč/ks`, ml + 6, y);
+        if (item.shipping > 0) {
+            doc.text(`(+ doprava ${item.shipping.toFixed(2)} Kč)`, ml + 60, y);
+        }
+
+        y += cardH - (item.description ? 18 : 12) + 10;
+    }
+
+    // ---- PRICE SUMMARY TABLE ----
+    y += 4;
+    if (y > 210) {
+        addPageFooter(doc);
+        doc.addPage();
+        y = 20;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...orange);
+    doc.text('CENOVÝ SOUHRN', ml, y);
+    y += 2;
+    doc.setDrawColor(...orange);
+    doc.setLineWidth(0.5);
+    doc.line(ml, y, ml + 35, y);
+    y += 4;
 
     doc.autoTable({
         startY: y,
@@ -872,80 +952,129 @@ function downloadPDF() {
             i.productName,
             `${i.quantity} ks`,
             `${i.unitPrice.toFixed(2)} Kč`,
-            `${i.totalPrice.toFixed(2)} Kč`,
+            fmtPrice(i.totalPrice),
         ]),
         headStyles: {
-            fillColor: orange,
+            fillColor: [45, 45, 45],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 9,
+            fontSize: 8.5,
+            cellPadding: 4,
+            font: 'helvetica',
         },
-        bodyStyles: { fontSize: 10, textColor: dark },
-        alternateRowStyles: { fillColor: [250, 250, 250] },
-        margin: { left: 15, right: 15 },
+        bodyStyles: {
+            fontSize: 9,
+            textColor: dark,
+            cellPadding: 3.5,
+            font: 'helvetica',
+        },
+        columnStyles: {
+            0: { cellWidth: 65 },
+            1: { halign: 'center', cellWidth: 30 },
+            2: { halign: 'right', cellWidth: 35 },
+            3: { halign: 'right', cellWidth: 45, fontStyle: 'bold' },
+        },
+        alternateRowStyles: { fillColor: [252, 251, 249] },
+        margin: { left: ml, right: pageW - mr },
+        tableLineWidth: 0,
+        tableLineColor: [230, 230, 230],
     });
 
-    y = doc.lastAutoTable.finalY + 10;
+    y = doc.lastAutoTable.finalY + 8;
 
-    // Totals box
-    if (y > 240) { doc.addPage(); y = 20; }
-
-    const boxH = q.shipping > 0 ? 48 : 40;
-    doc.setDrawColor(...orange);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(15, y, 180, boxH, 3, 3);
-
-    let ty = y + 8;
-    doc.setFontSize(10);
-    doc.setTextColor(...gray);
-    doc.text('Mezisoučet:', 20, ty);
-    doc.setTextColor(...dark);
-    doc.text(`${q.subtotal.toFixed(2)} Kč`, 190, ty, { align: 'right' });
-    ty += 7;
-
-    if (q.shipping > 0) {
-        doc.setTextColor(...gray);
-        doc.text('Doprava:', 20, ty);
-        doc.setTextColor(...dark);
-        doc.text(`${q.shipping.toFixed(2)} Kč`, 190, ty, { align: 'right' });
-        ty += 7;
+    // ---- TOTALS BOX ----
+    if (y > 235) {
+        addPageFooter(doc);
+        doc.addPage();
+        y = 20;
     }
 
-    doc.setTextColor(...gray);
-    doc.text('DPH 21 %:', 20, ty);
-    doc.setTextColor(...dark);
-    doc.text(`${q.vatAmount.toFixed(2)} Kč`, 190, ty, { align: 'right' });
-    ty += 3;
+    // Right-aligned totals box
+    const boxW = 85;
+    const boxX = mr - boxW;
+    const rowH = 7;
+    let rows = 2; // subtotal + vat
+    if (q.shipping > 0) rows++;
+    const totalBoxH = rows * rowH + 16; // +16 for final row
 
+    // Box background
+    doc.setFillColor(252, 251, 249);
+    doc.roundedRect(boxX, y, boxW, totalBoxH, 2, 2, 'F');
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(boxX, y, boxW, totalBoxH, 2, 2, 'S');
+
+    let ty = y + 6;
+    const valX = mr - 5;
+    const lblX = boxX + 5;
+
+    // Subtotal
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+    doc.text('Mezisoučet:', lblX, ty);
+    doc.setTextColor(...dark);
+    doc.text(fmtPrice(q.subtotal), valX, ty, { align: 'right' });
+    ty += rowH;
+
+    // Shipping
+    if (q.shipping > 0) {
+        doc.setTextColor(...gray);
+        doc.text('Doprava:', lblX, ty);
+        doc.setTextColor(...dark);
+        doc.text(fmtPrice(q.shipping), valX, ty, { align: 'right' });
+        ty += rowH;
+    }
+
+    // VAT
+    doc.setTextColor(...gray);
+    doc.text('DPH 21 %:', lblX, ty);
+    doc.setTextColor(...dark);
+    doc.text(fmtPrice(q.vatAmount), valX, ty, { align: 'right' });
+    ty += 4;
+
+    // Divider
     doc.setDrawColor(...orange);
-    doc.line(20, ty, 190, ty);
+    doc.setLineWidth(0.4);
+    doc.line(boxX + 3, ty, mr - 3, ty);
     ty += 7;
 
-    // Final total - orange bar
+    // Final total row — orange background
     doc.setFillColor(...orange);
-    doc.roundedRect(15, ty - 5, 180, 12, 0, 0, 'F');
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
+    const finalRowY = ty - 5;
+    // Bottom rounded corners
+    doc.roundedRect(boxX, finalRowY, boxW, 12, 2, 2, 'F');
+    // Cover top corners so only bottom is rounded
+    doc.rect(boxX, finalRowY, boxW, 4, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
     doc.setTextColor(255, 255, 255);
-    doc.text('Celkem s DPH:', 20, ty + 2);
-    doc.text(`${q.totalWithVat.toFixed(2)} Kč`, 190, ty + 2, { align: 'right' });
-    doc.setFont(undefined, 'normal');
+    doc.text('CELKEM S DPH:', lblX, ty + 1);
+    doc.setFontSize(11);
+    doc.text(fmtPrice(q.totalWithVat), valX, ty + 1, { align: 'right' });
 
-    y = ty + 20;
+    // ---- VALIDITY NOTE ----
+    y = y + totalBoxH + 5;
+    if (y > 270) {
+        addPageFooter(doc);
+        doc.addPage();
+        y = 20;
+    }
 
-    // Footer note
-    if (y > 260) { doc.addPage(); y = 20; }
-    doc.setFillColor(249, 250, 251);
-    doc.rect(15, y, 180, 24, 'F');
+    doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
-    doc.setTextColor(...gray);
-    doc.text('Uvedené ceny jsou bez DPH, pokud není uvedeno jinak. Cena zahrnuje potisk dle specifikace.', 20, y + 5);
-    doc.text('Nabídka je platná 30 dní od data vystavení.', 20, y + 10);
-    doc.setTextColor(...dark);
-    doc.text('TWIN Production s.r.o. | IČ: 26962039 | Dobrovského 31, 772 00 Olomouc', 20, y + 17);
-    doc.text('Tel: +420 603 491 003 | info@twinproduction.net | www.twinproduction.net', 20, y + 22);
+    doc.setTextColor(...lightGray);
+    doc.text('Uvedené ceny jsou bez DPH, pokud není uvedeno jinak. Cena zahrnuje potisk dle specifikace. Nabídka je platná 30 dní od data vystavení.', ml, y);
 
-    doc.save(`nabidka_${q.id}.pdf`);
+    // ---- FOOTER ON ALL PAGES ----
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        addPageFooter(doc);
+    }
+
+    doc.save(`nabidka_${String(q.id).padStart(4, '0')}.pdf`);
 }
 
 // ======================== HISTORY ========================
