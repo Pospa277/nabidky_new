@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nabídkový generátor | TWIN Production</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #E8611A;
+            --primary-dark: #C5500F;
+            --primary-light: #FFF3EC;
+            --dark: #2D2D2D;
+            --gray: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --border: #E5E7EB;
+            --success: #10B981;
+            --danger: #EF4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--gray-light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: var(--primary);
+            color: var(--white);
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .navbar .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--white);
+        }
+        .navbar .logo span { font-weight: 300; opacity: 0.9; }
+        .navbar nav a {
+            color: var(--white);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            cursor: pointer;
+        }
+        .navbar nav a:hover { opacity: 1; }
+        .navbar nav a.active { opacity: 1; border-bottom: 2px solid white; padding-bottom: 2px; }
+
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+
+        .card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            font-size: 0.9rem;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(232, 97, 26, 0.1);
+        }
+        textarea { min-height: 150px; resize: vertical; }
+
+        .btn {
+            display: inline-block;
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: inherit;
+        }
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--gray-light); color: var(--dark); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn-danger { background: var(--danger); color: var(--white); }
+        .btn-success { background: var(--success); color: var(--white); }
+        .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th {
+            background: var(--primary-light);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+        }
+        .text-right { text-align: right; }
+
+        .quote-item {
+            background: var(--gray-light);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+        .quote-item select, .quote-item input {
+            width: 100%;
+            padding: 0.5rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .parsed-info {
+            background: var(--primary-light);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+        .parsed-info strong { color: var(--primary-dark); }
+
+        .total-box {
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+        }
+        .total-row { display: flex; justify-content: space-between; padding: 0.3rem 0; }
+        .total-row.final {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-top: 2px solid var(--primary);
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+        }
+
+        .email-preview {
+            background: #FAFAFA;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .alert-success { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+        .alert-info { background: var(--primary-light); color: var(--primary-dark); border: 1px solid #FDBA74; }
+
+        .flex { display: flex; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .product-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .product-card h3 { font-size: 1rem; margin-bottom: 0.25rem; }
+        .product-card .category { font-size: 0.8rem; color: var(--gray); margin-bottom: 0.5rem; }
+        .product-card .price { color: var(--primary); font-weight: 700; }
+        .product-card .actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+
+        .tier-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 0.5rem;
+            align-items: end;
+            margin-top: 0.5rem;
+        }
+        .tier-form input {
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <a class="logo" onclick="showPage('home')">TWIN <span>Production</span> | Nabídky</a>
+    <nav>
+        <a onclick="showPage('home')" id="nav-home" class="active">Nová nabídka</a>
+        <a onclick="showPage('history')" id="nav-history">Historie</a>
+        <a onclick="showPage('admin')" id="nav-admin">Admin</a>
+    </nav>
+</div>
+
+<div class="container">
+
+    <!-- ==================== STRÁNKA: NOVÁ NABÍDKA ==================== -->
+    <div id="page-home" class="page active">
+        <!-- Krok 1: Vložení emailu -->
+        <div id="step-email" class="card">
+            <h2>Nová nabídka</h2>
+            <p class="mb-2">Vložte email od klienta a systém automaticky rozpozná produkt, množství a připraví nabídku.</p>
+            <div class="form-group">
+                <label for="emailInput">Email od klienta:</label>
+                <textarea id="emailInput" rows="10"
+                    placeholder="Vložte sem celý text emailu od klienta...&#10;&#10;Příklad:&#10;Dobrý den Filipe,&#10;Prosím o cenu na náplasti 300,500 ks, tisk logo 1b&#10;https://www.twinproduction.net/naplasti-pocket-box/produkt/23/17/&#10;&#10;Děkuji a přeji krásný den&#10;Maruška"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="parseEmail()">Analyzovat email</button>
+        </div>
+
+        <!-- Krok 2: Sestavení nabídky -->
+        <div id="step-form" class="hidden">
+            <div class="card">
+                <h2>Analyzovaný email</h2>
+                <div class="parsed-info" id="parsedInfo"></div>
+            </div>
+
+            <div class="card">
+                <h2>Sestavení nabídky</h2>
+                <div class="form-group">
+                    <label for="clientName">Jméno klienta:</label>
+                    <input type="text" id="clientName" placeholder="Jméno klienta">
+                </div>
+
+                <h3 class="mb-1">Položky nabídky:</h3>
+                <div id="itemsContainer"></div>
+                <button class="btn btn-secondary mt-1" onclick="addItem()">+ Přidat položku</button>
+
+                <div class="mt-2 flex gap-2">
+                    <button class="btn btn-primary" onclick="generateQuote()">Kalkulovat a vygenerovat nabídku</button>
+                    <button class="btn btn-secondary" onclick="resetHome()">Zpět</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Krok 3: Výsledek -->
+        <div id="step-result" class="hidden">
+            <div class="alert alert-success" id="resultAlert"></div>
+
+            <div class="card">
+                <h2>Cenová kalkulace</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produkt</th>
+                            <th class="text-right">Množství</th>
+                            <th class="text-right">Cena/ks</th>
+                            <th class="text-right">Celkem bez DPH</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultTableBody"></tbody>
+                </table>
+                <div class="total-box" id="resultTotals"></div>
+            </div>
+
+            <div class="card">
+                <h2>Produktový list (PDF)</h2>
+                <p class="mb-1">PDF nabídka s kalkulací je připravena ke stažení.</p>
+                <button class="btn btn-primary" onclick="downloadPDF()">Stáhnout PDF nabídku</button>
+            </div>
+
+            <div class="card">
+                <div class="flex-between mb-1">
+                    <h2 style="border:none;padding:0;margin:0">Odpověď na email</h2>
+                    <button class="btn btn-success btn-sm" onclick="copyEmail()">Kopírovat do schránky</button>
+                </div>
+                <div class="email-preview" id="emailReply"></div>
+            </div>
+
+            <div class="card">
+                <div class="flex gap-2">
+                    <button class="btn btn-primary" onclick="resetHome()">Nová nabídka</button>
+                    <button class="btn btn-secondary" onclick="showPage('history')">Historie nabídek</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== STRÁNKA: HISTORIE ==================== -->
+    <div id="page-history" class="page">
+        <div class="card">
+            <div class="flex-between">
+                <h2>Historie nabídek</h2>
+                <button class="btn btn-primary btn-sm" onclick="showPage('home')">Nová nabídka</button>
+            </div>
+            <div id="historyContent"></div>
+        </div>
+    </div>
+
+    <!-- ==================== STRÁNKA: ADMIN ==================== -->
+    <div id="page-admin" class="page">
+        <!-- Seznam produktů -->
+        <div id="admin-list">
+            <div class="card">
+                <div class="flex-between">
+                    <h2>Správa produktů</h2>
+                    <div class="flex gap-1">
+                        <button class="btn btn-secondary btn-sm" onclick="exportData()">Export dat</button>
+                        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">Import dat</button>
+                        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                        <button class="btn btn-primary btn-sm" onclick="showProductForm()">+ Nový produkt</button>
+                    </div>
+                </div>
+                <div id="productGrid" class="product-grid mt-1"></div>
+            </div>
+        </div>
+
+        <!-- Formulář produktu -->
+        <div id="admin-form" class="hidden">
+            <div class="card">
+                <h2 id="productFormTitle">Nový produkt</h2>
+                <input type="hidden" id="editProductId">
+                <div class="form-group">
+                    <label>Název produktu: *</label>
+                    <input type="text" id="prodName" placeholder="Např. Náplasti Pocket Box">
+                </div>
+                <div class="form-group">
+                    <label>Popis:</label>
+                    <textarea id="prodDesc" rows="3" placeholder="Popis produktu..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Kategorie:</label>
+                    <input type="text" id="prodCategory" placeholder="Např. Osobní péče">
+                </div>
+                <div class="form-group">
+                    <label>Doprava (Kč):</label>
+                    <input type="number" id="prodShipping" value="0" step="0.01" min="0">
+                </div>
+                <div class="flex gap-1">
+                    <button class="btn btn-primary" onclick="saveProduct()">Uložit</button>
+                    <button class="btn btn-secondary" onclick="hideProductForm()">Zpět</button>
+                </div>
+            </div>
+
+            <div id="tiersSection" class="card hidden">
+                <h2>Cenové stupně</h2>
+                <p class="mb-1">Čím vyšší množství, tím nižší cena za kus.</p>
+                <table>
+                    <thead>
+                        <tr><th>Od (ks)</th><th>Do (ks)</th><th>Cena/ks (Kč)</th><th></th></tr>
+                    </thead>
+                    <tbody id="tiersTableBody"></tbody>
+                </table>
+                <h3 class="mt-2">Přidat cenový stupeň:</h3>
+                <div class="tier-form">
+                    <div>
+                        <label>Od (ks):</label>
+                        <input type="number" id="tierMin" min="1" placeholder="100">
+                    </div>
+                    <div>
+                        <label>Do (ks):</label>
+                        <input type="number" id="tierMax" placeholder="299">
+                    </div>
+                    <div>
+                        <label>Cena/ks (Kč):</label>
+                        <input type="number" id="tierPrice" step="0.01" min="0" placeholder="36.00">
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button class="btn btn-primary btn-sm" onclick="addTier()">Přidat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ======================== DATA (localStorage) ========================
+
+function getProducts() {
+    const data = localStorage.getItem('tw_products');
+    return data ? JSON.parse(data) : [];
+}
+
+function saveProducts(products) {
+    localStorage.setItem('tw_products', JSON.stringify(products));
+}
+
+function getQuotes() {
+    const data = localStorage.getItem('tw_quotes');
+    return data ? JSON.parse(data) : [];
+}
+
+function saveQuotes(quotes) {
+    localStorage.setItem('tw_quotes', JSON.stringify(quotes));
+}
+
+function getNextId(items) {
+    if (items.length === 0) return 1;
+    return Math.max(...items.map(i => i.id)) + 1;
+}
+
+// ======================== SEED DATA ========================
+
+function seedIfEmpty() {
+    if (getProducts().length > 0) return;
+
+    const products = [
+        {
+            id: 1, name: "Náplasti Pocket Box",
+            description: "Reklamní náplasti v praktické krabičce s potiskem loga. Krabička obsahuje 10 ks náplastí.",
+            category: "Osobní péče", shipping: 0,
+            tiers: [
+                { min: 100, max: 299, price: 38 },
+                { min: 300, max: 499, price: 34 },
+                { min: 500, max: 999, price: 30 },
+                { min: 1000, max: null, price: 26 },
+            ]
+        },
+        {
+            id: 2, name: "Kondom Fólie 50",
+            description: "Reklamní kondom v potištěné fólii s vlastním grafickým návrhem.",
+            category: "Osobní péče", shipping: 0,
+            tiers: [
+                { min: 100, max: 299, price: 36 },
+                { min: 300, max: 499, price: 32 },
+                { min: 500, max: 999, price: 28 },
+                { min: 1000, max: null, price: 25 },
+            ]
+        },
+        {
+            id: 3, name: "Antibakteriální gel 50ml",
+            description: "Antibakteriální gel v lahvičce s vlastním potiskem. Obsahuje 70% alkoholu.",
+            category: "Hygiena", shipping: 150,
+            tiers: [
+                { min: 50, max: 199, price: 45 },
+                { min: 200, max: 499, price: 39 },
+                { min: 500, max: 999, price: 34 },
+                { min: 1000, max: null, price: 29 },
+            ]
+        },
+        {
+            id: 4, name: "Vlhčené ubrousky - box",
+            description: "Plastový zásobník s vlhčenými ubrousky. Velký prostor pro reklamní grafiku.",
+            category: "Hygiena", shipping: 200,
+            tiers: [
+                { min: 100, max: 299, price: 55 },
+                { min: 300, max: 499, price: 48 },
+                { min: 500, max: 999, price: 42 },
+                { min: 1000, max: null, price: 36 },
+            ]
+        },
+        {
+            id: 5, name: "Papírové kapesníky - balení",
+            description: "Reklamní papírové kapesníky v balení s potiskem. 10 ks kapesníků v balení.",
+            category: "Hygiena", shipping: 0,
+            tiers: [
+                { min: 200, max: 499, price: 12 },
+                { min: 500, max: 999, price: 9.5 },
+                { min: 1000, max: 4999, price: 7.5 },
+                { min: 5000, max: null, price: 6 },
+            ]
+        }
+    ];
+    saveProducts(products);
+}
+
+// ======================== NAVIGATION ========================
+
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.navbar nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('nav-' + page).classList.add('active');
+
+    if (page === 'admin') renderAdminList();
+    if (page === 'history') renderHistory();
+    if (page === 'home') resetHome();
+}
+
+// ======================== EMAIL PARSER ========================
+
+function parseEmail() {
+    const text = document.getElementById('emailInput').value.trim();
+    if (!text) { alert('Vložte email od klienta.'); return; }
+
+    // Parse client name (end of email)
+    let clientName = '';
+    const namePatterns = [
+        /(?:S pozdravem|Děkuji|Díky|S úctou|Hezký den|krásný den)[\s\S]*?\n\s*([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+(?:\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)?)/i,
+        /\n\s*([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)\s*$/
+    ];
+    for (const p of namePatterns) {
+        const m = text.match(p);
+        if (m) { clientName = m[1].trim(); break; }
+    }
+
+    // Parse quantities
+    let quantities = [];
+    const qtyMatch = text.match(/(\d[\d\s.,]*)\s*(?:ks|kusů|kusy|pcs)/i);
+    if (qtyMatch) {
+        const parts = qtyMatch[1].split(/[,;]\s*/);
+        for (const part of parts) {
+            const num = parseInt(part.trim().replace(/\s/g, '').replace(/\./g, ''));
+            if (num > 0) quantities.push(num);
+        }
+    }
+
+    // Parse URLs
+    const urls = text.match(/https?:\/\/[^\s<>"']+/g) || [];
+
+    // Parse print info
+    let printInfo = '';
+    const printMatch = text.match(/(?:tisk|potisk)\s+(.+?)(?:\n|$)/i) ||
+                       text.match(/logo\s+(\d+\s*b(?:arv)?)/i);
+    if (printMatch) printInfo = printMatch[1].trim();
+
+    // Match products
+    const products = getProducts();
+    const keywords = ["náplast", "náplasti", "kondom", "kondomy", "ubrousek", "ubrousky",
+        "gel", "gely", "kapesník", "kapesníky", "krém", "spray", "sprej",
+        "pasta", "mýdlo", "dezinfekce", "tissues", "wipes", "pocket", "fólie"];
+
+    const textLower = text.toLowerCase();
+    const matchedProducts = [];
+    for (const product of products) {
+        const prodLower = product.name.toLowerCase();
+        for (const kw of keywords) {
+            if (textLower.includes(kw) && prodLower.includes(kw)) {
+                matchedProducts.push(product);
+                break;
+            }
+        }
+    }
+
+    // Show parsed info
+    let infoHtml = '';
+    if (clientName) infoHtml += `<p><strong>Klient:</strong> ${clientName}</p>`;
+    if (quantities.length) infoHtml += `<p><strong>Množství:</strong> ${quantities.join(', ')} ks</p>`;
+    if (printInfo) infoHtml += `<p><strong>Potisk:</strong> ${printInfo}</p>`;
+    if (urls.length) infoHtml += `<p><strong>Odkazy:</strong> ${urls.map(u => `<a href="${u}" target="_blank">${u}</a>`).join(' ')}</p>`;
+    if (matchedProducts.length) infoHtml += `<p><strong>Nalezené produkty:</strong> ${matchedProducts.map(p => p.name).join(', ')}</p>`;
+    if (!infoHtml) infoHtml = '<p>Nepodařilo se automaticky rozpoznat údaje. Vyplňte formulář ručně.</p>';
+
+    document.getElementById('parsedInfo').innerHTML = infoHtml;
+    document.getElementById('clientName').value = clientName;
+
+    // Build items
+    const container = document.getElementById('itemsContainer');
+    container.innerHTML = '';
+
+    if (matchedProducts.length && quantities.length) {
+        for (const qty of quantities) {
+            for (const prod of matchedProducts) {
+                addItem(prod.id, qty);
+            }
+        }
+    } else {
+        addItem(matchedProducts.length ? matchedProducts[0].id : '', quantities[0] || '');
+    }
+
+    document.getElementById('step-email').classList.add('hidden');
+    document.getElementById('step-form').classList.remove('hidden');
+}
+
+let itemCounter = 0;
+
+function addItem(productId = '', quantity = '') {
+    const products = getProducts();
+    const container = document.getElementById('itemsContainer');
+    const idx = itemCounter++;
+
+    let options = '<option value="">-- Vyberte --</option>';
+    for (const p of products) {
+        const sel = p.id == productId ? 'selected' : '';
+        options += `<option value="${p.id}" ${sel}>${p.name}</option>`;
+    }
+
+    container.insertAdjacentHTML('beforeend', `
+        <div class="quote-item" id="item-${idx}">
+            <div>
+                <label>Produkt:</label>
+                <select id="prod-${idx}">${options}</select>
+            </div>
+            <div>
+                <label>Množství (ks):</label>
+                <input type="number" id="qty-${idx}" value="${quantity}" min="1">
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button class="btn btn-danger btn-sm" onclick="document.getElementById('item-${idx}').remove()">Odebrat</button>
+            </div>
+        </div>
+    `);
+}
+
+// ======================== QUOTE GENERATOR ========================
+
+let currentQuote = null;
+
+function getPriceForQuantity(product, qty) {
+    if (!product.tiers || !product.tiers.length) return 0;
+    const sorted = [...product.tiers].sort((a, b) => a.min - b.min);
+    for (const tier of sorted) {
+        const max = tier.max || 999999;
+        if (qty >= tier.min && qty <= max) return tier.price;
+    }
+    // Fallback
+    if (qty < sorted[0].min) return sorted[0].price;
+    return sorted[sorted.length - 1].price;
+}
+
+function generateQuote() {
+    const products = getProducts();
+    const items = [];
+    const itemElements = document.querySelectorAll('.quote-item');
+
+    for (const el of itemElements) {
+        const idx = el.id.replace('item-', '');
+        const productId = parseInt(document.getElementById('prod-' + idx)?.value);
+        const quantity = parseInt(document.getElementById('qty-' + idx)?.value);
+        if (!productId || !quantity) continue;
+
+        const product = products.find(p => p.id === productId);
+        if (!product) continue;
+
+        const unitPrice = getPriceForQuantity(product, quantity);
+        const totalPrice = Math.round(unitPrice * quantity * 100) / 100;
+
+        items.push({
+            productName: product.name,
+            description: product.description,
+            quantity,
+            unitPrice,
+            totalPrice,
+            shipping: product.shipping || 0,
+        });
+    }
+
+    if (!items.length) { alert('Přidejte alespoň jednu položku.'); return; }
+
+    const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
+    const shipping = items.reduce((s, i) => s + i.shipping, 0);
+    const totalWithoutVat = Math.round((subtotal + shipping) * 100) / 100;
+    const vatAmount = Math.round(subtotal * 0.21 * 100) / 100;
+    const totalWithVat = Math.round((totalWithoutVat + vatAmount) * 100) / 100;
+
+    const clientName = document.getElementById('clientName').value.trim();
+    const emailText = document.getElementById('emailInput').value.trim();
+
+    // Save quote
+    const quotes = getQuotes();
+    const quote = {
+        id: getNextId(quotes),
+        clientName,
+        originalEmail: emailText,
+        items,
+        subtotal,
+        shipping,
+        totalWithoutVat,
+        vatAmount,
+        totalWithVat,
+        date: new Date().toLocaleString('cs-CZ'),
+    };
+
+    // Email reply
+    let itemsText = '';
+    for (const item of items) {
+        itemsText += `  - ${item.productName}: ${item.quantity} ks × ${item.unitPrice.toFixed(2)} Kč = ${item.totalPrice.toFixed(2)} Kč bez DPH\n`;
+    }
+
+    quote.emailReply = `${clientName ? 'Dobrý den, ' + clientName + ',' : 'Dobrý den,'}\n\nděkuji za Váš zájem. Níže zasílám cenovou kalkulaci dle Vašeho požadavku:\n\n${itemsText}\nCelkem bez DPH: ${totalWithoutVat.toFixed(2)} Kč\nCelkem s DPH (21 %): ${totalWithVat.toFixed(2)} Kč\n\nCeny jsou uvedeny bez DPH. V příloze zasílám podrobný produktový list s kalkulací.\n\nV případě jakýchkoliv dotazů se neváhejte obrátit.\n\nS pozdravem\nFilip\nTWIN Production s.r.o.`;
+
+    quotes.push(quote);
+    saveQuotes(quotes);
+    currentQuote = quote;
+
+    // Render result
+    document.getElementById('resultAlert').textContent = `Nabídka #${quote.id} byla úspěšně vygenerována!`;
+
+    let tbody = '';
+    for (const item of items) {
+        tbody += `<tr>
+            <td>${item.productName}</td>
+            <td class="text-right">${item.quantity} ks</td>
+            <td class="text-right">${item.unitPrice.toFixed(2)} Kč</td>
+            <td class="text-right">${item.totalPrice.toFixed(2)} Kč</td>
+        </tr>`;
+    }
+    document.getElementById('resultTableBody').innerHTML = tbody;
+
+    let totalsHtml = `
+        <div class="total-row"><span>Mezisoučet:</span><span>${subtotal.toFixed(2)} Kč</span></div>
+        ${shipping > 0 ? `<div class="total-row"><span>Doprava:</span><span>${shipping.toFixed(2)} Kč</span></div>` : ''}
+        <div class="total-row"><span>Celkem bez DPH:</span><span>${totalWithoutVat.toFixed(2)} Kč</span></div>
+        <div class="total-row"><span>DPH 21 %:</span><span>${vatAmount.toFixed(2)} Kč</span></div>
+        <div class="total-row final"><span>Celkem s DPH:</span><span>${totalWithVat.toFixed(2)} Kč</span></div>
+    `;
+    document.getElementById('resultTotals').innerHTML = totalsHtml;
+    document.getElementById('emailReply').textContent = quote.emailReply;
+
+    document.getElementById('step-form').classList.add('hidden');
+    document.getElementById('step-result').classList.remove('hidden');
+}
+
+function copyEmail() {
+    const text = document.getElementById('emailReply').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Zkopírováno!';
+        setTimeout(() => { btn.textContent = 'Kopírovat do schránky'; }, 2000);
+    });
+}
+
+function resetHome() {
+    itemCounter = 0;
+    document.getElementById('step-email').classList.remove('hidden');
+    document.getElementById('step-form').classList.add('hidden');
+    document.getElementById('step-result').classList.add('hidden');
+    document.getElementById('emailInput').value = '';
+    document.getElementById('itemsContainer').innerHTML = '';
+}
+
+// ======================== PDF GENERATION ========================
+
+function downloadPDF() {
+    if (!currentQuote) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const q = currentQuote;
+
+    // Colors
+    const orange = [232, 97, 26];
+    const dark = [45, 45, 45];
+    const gray = [107, 112, 128];
+
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(...orange);
+    doc.text('TWIN', 15, 20);
+    doc.setTextColor(...gray);
+    doc.setFontSize(22);
+    doc.text('Production', 46, 20);
+
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+    doc.text('reklamní předměty a potisk', 15, 27);
+
+    // Quote info (right side)
+    doc.setFontSize(14);
+    doc.setTextColor(...dark);
+    doc.text(`Nabídka #${q.id}`, 195, 15, { align: 'right' });
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+    doc.text(`Datum: ${q.date}`, 195, 22, { align: 'right' });
+
+    // Orange line
+    doc.setDrawColor(...orange);
+    doc.setLineWidth(0.8);
+    doc.line(15, 32, 195, 32);
+
+    // Client
+    let y = 42;
+    if (q.clientName) {
+        doc.setFillColor(255, 248, 243);
+        doc.rect(15, y - 6, 180, 12, 'F');
+        doc.setDrawColor(...orange);
+        doc.setLineWidth(1);
+        doc.line(15, y - 6, 15, y + 6);
+        doc.setFontSize(10);
+        doc.setTextColor(...orange);
+        doc.text('Klient: ', 20, y + 1);
+        doc.setTextColor(...dark);
+        doc.text(q.clientName, 40, y + 1);
+        y += 20;
+    }
+
+    // Products section
+    doc.setFontSize(13);
+    doc.setTextColor(...orange);
+    doc.text('Produkty a kalkulace', 15, y);
+    y += 3;
+    doc.setDrawColor(253, 231, 216);
+    doc.setLineWidth(0.3);
+    doc.line(15, y, 195, y);
+    y += 10;
+
+    for (const item of q.items) {
+        if (y > 250) { doc.addPage(); y = 20; }
+
+        doc.setFontSize(12);
+        doc.setTextColor(...dark);
+        doc.text(item.productName, 15, y);
+        y += 6;
+
+        if (item.description) {
+            doc.setFontSize(9);
+            doc.setTextColor(...gray);
+            const descLines = doc.splitTextToSize(item.description, 170);
+            doc.text(descLines, 15, y);
+            y += descLines.length * 4 + 2;
+        }
+
+        doc.setFontSize(10);
+        doc.setTextColor(...orange);
+        doc.text(`${item.quantity} ks`, 15, y);
+        doc.setTextColor(...dark);
+        doc.text(`× ${item.unitPrice.toFixed(2)} Kč/ks = `, 40, y);
+        doc.setFont(undefined, 'bold');
+        doc.text(`${item.totalPrice.toFixed(2)} Kč bez DPH`, 85, y);
+        doc.setFont(undefined, 'normal');
+        y += 12;
+    }
+
+    // Price table
+    if (y > 220) { doc.addPage(); y = 20; }
+
+    doc.setFontSize(13);
+    doc.setTextColor(...orange);
+    doc.text('Cenový souhrn', 15, y);
+    y += 5;
+
+    doc.autoTable({
+        startY: y,
+        head: [['Produkt', 'Množství', 'Cena/ks', 'Celkem bez DPH']],
+        body: q.items.map(i => [
+            i.productName,
+            `${i.quantity} ks`,
+            `${i.unitPrice.toFixed(2)} Kč`,
+            `${i.totalPrice.toFixed(2)} Kč`,
+        ]),
+        headStyles: {
+            fillColor: orange,
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 9,
+        },
+        bodyStyles: { fontSize: 10, textColor: dark },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        margin: { left: 15, right: 15 },
+    });
+
+    y = doc.lastAutoTable.finalY + 10;
+
+    // Totals box
+    if (y > 240) { doc.addPage(); y = 20; }
+
+    const boxH = q.shipping > 0 ? 48 : 40;
+    doc.setDrawColor(...orange);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(15, y, 180, boxH, 3, 3);
+
+    let ty = y + 8;
+    doc.setFontSize(10);
+    doc.setTextColor(...gray);
+    doc.text('Mezisoučet:', 20, ty);
+    doc.setTextColor(...dark);
+    doc.text(`${q.subtotal.toFixed(2)} Kč`, 190, ty, { align: 'right' });
+    ty += 7;
+
+    if (q.shipping > 0) {
+        doc.setTextColor(...gray);
+        doc.text('Doprava:', 20, ty);
+        doc.setTextColor(...dark);
+        doc.text(`${q.shipping.toFixed(2)} Kč`, 190, ty, { align: 'right' });
+        ty += 7;
+    }
+
+    doc.setTextColor(...gray);
+    doc.text('DPH 21 %:', 20, ty);
+    doc.setTextColor(...dark);
+    doc.text(`${q.vatAmount.toFixed(2)} Kč`, 190, ty, { align: 'right' });
+    ty += 3;
+
+    doc.setDrawColor(...orange);
+    doc.line(20, ty, 190, ty);
+    ty += 7;
+
+    // Final total - orange bar
+    doc.setFillColor(...orange);
+    doc.roundedRect(15, ty - 5, 180, 12, 0, 0, 'F');
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Celkem s DPH:', 20, ty + 2);
+    doc.text(`${q.totalWithVat.toFixed(2)} Kč`, 190, ty + 2, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+
+    y = ty + 20;
+
+    // Footer note
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(249, 250, 251);
+    doc.rect(15, y, 180, 24, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(...gray);
+    doc.text('Uvedené ceny jsou bez DPH, pokud není uvedeno jinak. Cena zahrnuje potisk dle specifikace.', 20, y + 5);
+    doc.text('Nabídka je platná 30 dní od data vystavení.', 20, y + 10);
+    doc.setTextColor(...dark);
+    doc.text('TWIN Production s.r.o. | IČ: 26962039 | Dobrovského 31, 772 00 Olomouc', 20, y + 17);
+    doc.text('Tel: +420 603 491 003 | info@twinproduction.net | www.twinproduction.net', 20, y + 22);
+
+    doc.save(`nabidka_${q.id}.pdf`);
+}
+
+// ======================== HISTORY ========================
+
+function renderHistory() {
+    const quotes = getQuotes().reverse();
+    const container = document.getElementById('historyContent');
+
+    if (!quotes.length) {
+        container.innerHTML = '<p style="text-align:center;color:var(--gray);margin-top:1rem">Zatím žádné nabídky.</p>';
+        return;
+    }
+
+    let html = `<table><thead><tr>
+        <th>#</th><th>Klient</th><th>Položky</th><th>Celkem s DPH</th><th>Datum</th><th></th>
+    </tr></thead><tbody>`;
+
+    for (const q of quotes) {
+        html += `<tr>
+            <td>${q.id}</td>
+            <td>${q.clientName || '—'}</td>
+            <td>${q.items.length} položek</td>
+            <td class="text-right">${q.totalWithVat.toFixed(2)} Kč</td>
+            <td>${q.date}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="reloadQuote(${q.id})">Zobrazit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteQuote(${q.id})">Smazat</button>
+            </td>
+        </tr>`;
+    }
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function reloadQuote(id) {
+    const quotes = getQuotes();
+    const q = quotes.find(q => q.id === id);
+    if (!q) return;
+    currentQuote = q;
+
+    showPage('home');
+    document.getElementById('step-email').classList.add('hidden');
+
+    // Show result directly
+    document.getElementById('resultAlert').textContent = `Nabídka #${q.id} (${q.date})`;
+    let tbody = '';
+    for (const item of q.items) {
+        tbody += `<tr>
+            <td>${item.productName}</td>
+            <td class="text-right">${item.quantity} ks</td>
+            <td class="text-right">${item.unitPrice.toFixed(2)} Kč</td>
+            <td class="text-right">${item.totalPrice.toFixed(2)} Kč</td>
+        </tr>`;
+    }
+    document.getElementById('resultTableBody').innerHTML = tbody;
+
+    let totalsHtml = `
+        <div class="total-row"><span>Mezisoučet:</span><span>${q.subtotal.toFixed(2)} Kč</span></div>
+        ${q.shipping > 0 ? `<div class="total-row"><span>Doprava:</span><span>${q.shipping.toFixed(2)} Kč</span></div>` : ''}
+        <div class="total-row"><span>Celkem bez DPH:</span><span>${q.totalWithoutVat.toFixed(2)} Kč</span></div>
+        <div class="total-row"><span>DPH 21 %:</span><span>${q.vatAmount.toFixed(2)} Kč</span></div>
+        <div class="total-row final"><span>Celkem s DPH:</span><span>${q.totalWithVat.toFixed(2)} Kč</span></div>
+    `;
+    document.getElementById('resultTotals').innerHTML = totalsHtml;
+    document.getElementById('emailReply').textContent = q.emailReply;
+    document.getElementById('step-result').classList.remove('hidden');
+}
+
+function deleteQuote(id) {
+    if (!confirm('Opravdu smazat tuto nabídku?')) return;
+    const quotes = getQuotes().filter(q => q.id !== id);
+    saveQuotes(quotes);
+    renderHistory();
+}
+
+// ======================== ADMIN ========================
+
+function renderAdminList() {
+    const products = getProducts();
+    const grid = document.getElementById('productGrid');
+
+    if (!products.length) {
+        grid.innerHTML = '<p style="text-align:center;color:var(--gray)">Zatím žádné produkty. Přidejte první!</p>';
+        return;
+    }
+
+    let html = '';
+    for (const p of products) {
+        const lowestPrice = p.tiers && p.tiers.length
+            ? Math.min(...p.tiers.map(t => t.price)).toFixed(2)
+            : null;
+
+        html += `<div class="product-card">
+            <h3>${p.name}</h3>
+            <div class="category">${p.category || 'Bez kategorie'}</div>
+            ${lowestPrice
+                ? `<div class="price">od ${lowestPrice} Kč/ks</div>`
+                : '<div class="price" style="color:var(--danger)">Bez ceníku!</div>'}
+            <div style="font-size:0.8rem;color:var(--gray);margin-top:0.25rem">${p.tiers ? p.tiers.length : 0} cenových stupňů</div>
+            <div class="actions">
+                <button class="btn btn-secondary btn-sm" onclick="editProduct(${p.id})">Upravit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Smazat</button>
+            </div>
+        </div>`;
+    }
+    grid.innerHTML = html;
+    document.getElementById('admin-list').classList.remove('hidden');
+    document.getElementById('admin-form').classList.add('hidden');
+}
+
+function showProductForm(product = null) {
+    document.getElementById('admin-list').classList.add('hidden');
+    document.getElementById('admin-form').classList.remove('hidden');
+
+    document.getElementById('productFormTitle').textContent = product ? 'Upravit produkt' : 'Nový produkt';
+    document.getElementById('editProductId').value = product ? product.id : '';
+    document.getElementById('prodName').value = product ? product.name : '';
+    document.getElementById('prodDesc').value = product ? product.description : '';
+    document.getElementById('prodCategory').value = product ? product.category : '';
+    document.getElementById('prodShipping').value = product ? product.shipping : 0;
+
+    if (product) {
+        document.getElementById('tiersSection').classList.remove('hidden');
+        renderTiers(product);
+    } else {
+        document.getElementById('tiersSection').classList.add('hidden');
+    }
+}
+
+function hideProductForm() {
+    renderAdminList();
+}
+
+function saveProduct() {
+    const name = document.getElementById('prodName').value.trim();
+    if (!name) { alert('Vyplňte název produktu.'); return; }
+
+    const products = getProducts();
+    const editId = parseInt(document.getElementById('editProductId').value);
+
+    if (editId) {
+        const product = products.find(p => p.id === editId);
+        if (product) {
+            product.name = name;
+            product.description = document.getElementById('prodDesc').value.trim();
+            product.category = document.getElementById('prodCategory').value.trim();
+            product.shipping = parseFloat(document.getElementById('prodShipping').value) || 0;
+        }
+    } else {
+        const newProduct = {
+            id: getNextId(products),
+            name,
+            description: document.getElementById('prodDesc').value.trim(),
+            category: document.getElementById('prodCategory').value.trim(),
+            shipping: parseFloat(document.getElementById('prodShipping').value) || 0,
+            tiers: [],
+        };
+        products.push(newProduct);
+        saveProducts(products);
+        // Switch to edit mode to add tiers
+        showProductForm(newProduct);
+        return;
+    }
+
+    saveProducts(products);
+    alert('Produkt uložen.');
+}
+
+function editProduct(id) {
+    const product = getProducts().find(p => p.id === id);
+    if (product) showProductForm(product);
+}
+
+function deleteProduct(id) {
+    if (!confirm('Opravdu smazat tento produkt?')) return;
+    const products = getProducts().filter(p => p.id !== id);
+    saveProducts(products);
+    renderAdminList();
+}
+
+// Tiers
+function renderTiers(product) {
+    const tbody = document.getElementById('tiersTableBody');
+    if (!product.tiers || !product.tiers.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray)">Žádné cenové stupně</td></tr>';
+        return;
+    }
+
+    let html = '';
+    for (let i = 0; i < product.tiers.length; i++) {
+        const t = product.tiers[i];
+        html += `<tr>
+            <td>${t.min}</td>
+            <td>${t.max || '∞'}</td>
+            <td>${t.price.toFixed(2)} Kč</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteTier(${product.id}, ${i})">Smazat</button></td>
+        </tr>`;
+    }
+    tbody.innerHTML = html;
+}
+
+function addTier() {
+    const editId = parseInt(document.getElementById('editProductId').value);
+    if (!editId) return;
+
+    const min = parseInt(document.getElementById('tierMin').value);
+    const maxVal = document.getElementById('tierMax').value;
+    const max = maxVal ? parseInt(maxVal) : null;
+    const price = parseFloat(document.getElementById('tierPrice').value);
+
+    if (!min || !price) { alert('Vyplňte Od a Cenu.'); return; }
+
+    const products = getProducts();
+    const product = products.find(p => p.id === editId);
+    if (!product) return;
+
+    if (!product.tiers) product.tiers = [];
+    product.tiers.push({ min, max, price });
+    product.tiers.sort((a, b) => a.min - b.min);
+    saveProducts(products);
+
+    renderTiers(product);
+    document.getElementById('tierMin').value = '';
+    document.getElementById('tierMax').value = '';
+    document.getElementById('tierPrice').value = '';
+}
+
+function deleteTier(productId, tierIndex) {
+    const products = getProducts();
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    product.tiers.splice(tierIndex, 1);
+    saveProducts(products);
+    renderTiers(product);
+}
+
+// ======================== EXPORT / IMPORT ========================
+
+function exportData() {
+    const data = {
+        products: getProducts(),
+        quotes: getQuotes(),
+        exportDate: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `twin_nabidky_export_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.products) saveProducts(data.products);
+            if (data.quotes) saveQuotes(data.quotes);
+            alert('Data úspěšně importována!');
+            renderAdminList();
+        } catch (err) {
+            alert('Chyba při importu: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ======================== INIT ========================
+
+seedIfEmpty();
+</script>
+
+</body>
+</html>
