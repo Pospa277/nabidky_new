@@ -1,13 +1,16 @@
 """Hlavní FastAPI aplikace - Nabídkový generátor TWIN Production."""
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import init_db
 from app.routes import quotes, admin
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = FastAPI(title="TWIN Production - Nabídkový generátor")
 
 # Statické soubory
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Routy
 app.include_router(quotes.router)

@@ -12,8 +12,11 @@ from app.services.calculator import calculate_quote
 from app.services.email_composer import compose_reply
 from app.services.pdf_generator import generate_quote_pdf
 
+import os
+
 router = APIRouter(tags=["quotes"])
-templates = Jinja2Templates(directory="app/templates")
+_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
+templates = Jinja2Templates(directory=_TEMPLATE_DIR)
 
 
 @router.get("/", response_class=HTMLResponse)
